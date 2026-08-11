@@ -50,7 +50,8 @@ export default function AdminLoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="superadmin@mmgm.com"
+              placeholder="abcd@mmgm.com"
+              className="placeholder:text-gray-400"
               required
             />
           </div>
@@ -62,6 +63,8 @@ export default function AdminLoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="password"
+              className="placeholder:text-gray-400"
               required
             />
           </div>

@@ -61,7 +61,7 @@ export function MemberDialog({ memberToEdit }: Props) {
             <Pencil className="h-4 w-4" />
           </Button>
         ) : (
-          <Button size="sm" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+          <Button size="sm" className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white">
             <UserPlus className="h-4 w-4" /> Tambah Anggota
           </Button>
         )}

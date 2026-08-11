@@ -36,6 +36,7 @@ model PaymentCategory {
   id              Int           @id // 1=KAS, 2=DANASOS, 3=ARISAN
   code            String        @unique // KAS, DANASOS, ARISAN
   fixed_amount    Decimal
+  initial_balance Decimal       @default(0)
   managed_by_role Role
   transactions    Transaction[]
   expenses        Expense[]

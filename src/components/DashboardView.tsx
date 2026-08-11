@@ -8,6 +8,7 @@ import Image from 'next/image'
 import { deleteExpense } from '@/actions/expenses'
 import { deleteArisanWinner } from '@/actions/arisan'
 import { toggleArisanParticipation } from '@/actions/members'
+import { updateInitialBalance } from '@/actions/transactions'
 import { ArisanSpinDialog } from './ArisanSpinDialog'
 import { MemberDialog } from './MemberDialog'
 import { DeleteMemberDialog } from './DeleteMemberDialog'
@@ -41,6 +42,20 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [confirmState, setConfirmState] = useState<{ open: boolean, title: string, message: string, onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => {} })
+  const [editBalance, setEditBalance] = useState<{ open: boolean, categoryId: number, amount: string }>({ open: false, categoryId: 1, amount: '' })
+  const [isUpdatingBalance, setIsUpdatingBalance] = useState(false)
+
+  const handleUpdateBalance = async () => {
+    setIsUpdatingBalance(true)
+    const res = await updateInitialBalance({ categoryId: editBalance.categoryId, amount: Number(editBalance.amount) || 0 })
+    setIsUpdatingBalance(false)
+    if (res.success) {
+      toast.success('Saldo awal berhasil diperbarui')
+      setEditBalance({ ...editBalance, open: false })
+    } else {
+      toast.error(res.error)
+    }
+  }
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -184,8 +199,9 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
                         const isPastDue = isMonthPastOrCurrent && isAfterJoinDate
 
                         return (
-                          <td key={idx} className="w-11 md:w-14 h-11 md:h-14 text-center align-middle p-0">
+                          <td key={`${categoryId}-${row.member.id}-${monthNumber}`} className="w-11 md:w-14 h-11 md:h-14 text-center align-middle p-0">
                             <OptimisticCheckbox
+                              key={`checkbox-${categoryId}-${row.member.id}-${monthNumber}`}
                               memberId={row.member.id}
                               categoryId={categoryId}
                               month={monthNumber}
@@ -354,8 +370,16 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
         return (
           <div className="space-y-4 md:space-y-6">
             <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
-              {/* Saldo Kas */}
-              <div className={`relative overflow-hidden rounded-2xl p-5 md:p-6 ${financials.saldoKasAktual > 0 ? 'bg-gradient-to-br from-emerald-500 to-emerald-700' : 'bg-gradient-to-br from-rose-500 to-rose-700'} text-white shadow-lg`}>
+              <div 
+                onClick={() => {
+                  if (userRole === 'SUPER_ADMIN' || userRole === 'PJ_KAS') {
+                    setEditBalance({ open: true, categoryId: 1, amount: String(financials.initialKas || 0) })
+                  }
+                }}
+                className={`relative overflow-hidden rounded-2xl p-5 md:p-6 ${financials.saldoKasAktual > 0 ? 'bg-gradient-to-br from-emerald-500 to-emerald-700' : 'bg-gradient-to-br from-rose-500 to-rose-700'} text-white shadow-lg ${
+                  (userRole === 'SUPER_ADMIN' || userRole === 'PJ_KAS') ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
+                }`}
+              >
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
                 <div className="absolute bottom-0 right-0 -mb-6 -mr-6 h-32 w-32 rounded-full bg-white/5" />
                 <div className="relative">
@@ -383,7 +407,16 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
               </div>
 
               {/* Saldo Danasos */}
-              <div className="relative overflow-hidden rounded-2xl p-5 md:p-6 bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-lg">
+              <div 
+                onClick={() => {
+                  if (userRole === 'SUPER_ADMIN' || userRole === 'PJ_DANASOS') {
+                    setEditBalance({ open: true, categoryId: 2, amount: String(financials.initialDanasos || 0) })
+                  }
+                }}
+                className={`relative overflow-hidden rounded-2xl p-5 md:p-6 bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-lg ${
+                  (userRole === 'SUPER_ADMIN' || userRole === 'PJ_DANASOS') ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
+                }`}
+              >
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10" />
                 <div className="absolute bottom-0 right-0 -mb-6 -mr-6 h-32 w-32 rounded-full bg-white/5" />
                 <div className="relative">
@@ -565,7 +598,7 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
         <DialogContent className="sm:max-w-xs">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-rose-600">
-              <AlertTriangle className="h-5 w-5" /> {confirmState.title}
+              <AlertTriangle className="h-5 w-5" /> Konfirmasi
             </DialogTitle>
           </DialogHeader>
           <div className="py-2 text-sm text-gray-700">
@@ -574,6 +607,36 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" size="sm" onClick={() => setConfirmState(prev => ({ ...prev, open: false }))}>Batal</Button>
             <Button variant="destructive" size="sm" onClick={confirmState.onConfirm}>Ya, Lanjutkan</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Initial Balance Dialog */}
+      <Dialog open={editBalance.open} onOpenChange={(open) => setEditBalance(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-indigo-600" /> Penyesuaian Saldo Awal
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Saldo Awal (Rp)</label>
+              <input
+                type="number"
+                value={editBalance.amount}
+                onChange={(e) => setEditBalance(prev => ({ ...prev, amount: e.target.value }))}
+                className="w-full border-gray-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500 p-2 border"
+                placeholder="0"
+              />
+              <p className="text-xs text-gray-500">Angka ini akan ditambahkan sebagai modal awal ke dalam saldo aktual {editBalance.categoryId === 1 ? 'Kas' : 'Danasos'}.</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEditBalance(prev => ({ ...prev, open: false }))}>Batal</Button>
+            <Button onClick={handleUpdateBalance} disabled={isUpdatingBalance} size="sm">
+              {isUpdatingBalance ? 'Menyimpan...' : 'Simpan'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

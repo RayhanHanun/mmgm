@@ -77,10 +77,50 @@ export async function toggleTransaction(payload: z.infer<typeof toggleSchema>) {
       })
     }
 
-    revalidatePath('/') // Revalidate rute publik/dashboard setelah mutasi sukses
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Toggle Transaction Error:', error)
     return { success: false, error: 'Gagal melakukan mutasi database' }
+  }
+}
+
+const initialBalanceSchema = z.object({
+  categoryId: z.number().int().min(1).max(2),
+  amount: z.number().min(0)
+})
+
+export async function updateInitialBalance(payload: z.infer<typeof initialBalanceSchema>) {
+  const parsed = initialBalanceSchema.safeParse(payload)
+  if (!parsed.success) return { success: false, error: 'Data tidak valid' }
+  const { categoryId, amount } = parsed.data
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
+  let account = await prisma.systemAccount.findUnique({ where: { id: user.id } })
+  if (!account && user.email) {
+    account = await prisma.systemAccount.findUnique({ where: { username: user.email.split('@')[0] } })
+  }
+  if (!account) return { success: false, error: 'Akun admin tidak terdaftar' }
+
+  const category = await prisma.paymentCategory.findUnique({ where: { id: categoryId } })
+  if (!category) return { success: false, error: 'Kategori tidak ditemukan' }
+
+  if (account.role !== Role.SUPER_ADMIN && account.role !== category.managed_by_role) {
+    return { success: false, error: 'Dilarang: Anda tidak memiliki akses untuk mengubah saldo ini' }
+  }
+
+  try {
+    await prisma.paymentCategory.update({
+      where: { id: categoryId },
+      data: { initial_balance: amount }
+    })
+    revalidatePath('/')
+    return { success: true }
+  } catch (error) {
+    console.error('Update Initial Balance Error:', error)
+    return { success: false, error: 'Gagal memperbarui saldo awal' }
   }
 }

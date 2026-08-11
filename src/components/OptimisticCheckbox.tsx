@@ -33,6 +33,7 @@ export function OptimisticCheckbox({
   )
   const [isPending, startTransition] = useTransition()
   const [showConfirm, setShowConfirm] = useState(false)
+  const [pendingStatus, setPendingStatus] = useState<boolean | null>(null)
 
   const executeToggle = (newStatus: boolean) => {
     startTransition(async () => {
@@ -49,20 +50,16 @@ export function OptimisticCheckbox({
 
   const handleToggle = () => {
     if (isDisabled || isPending) return
-
     const newStatus = !optimisticStatus
-    
-    if (!newStatus) {
-      setShowConfirm(true)
-      return
-    }
-
-    executeToggle(newStatus)
+    setPendingStatus(newStatus)
+    setShowConfirm(true)
   }
 
-  const confirmDelete = () => {
+  const confirmAction = () => {
+    if (pendingStatus !== null) {
+      executeToggle(pendingStatus)
+    }
     setShowConfirm(false)
-    executeToggle(false)
   }
 
   // Render for Disabled (Public view)
@@ -91,7 +88,6 @@ export function OptimisticCheckbox({
         <Checkbox
           checked={optimisticStatus}
           onCheckedChange={handleToggle}
-          disabled={isPending}
           className={`h-5 w-5 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 ${!optimisticStatus && isPastDue ? 'border-rose-400 bg-rose-50' : ''}`}
         />
       </div>
@@ -99,16 +95,18 @@ export function OptimisticCheckbox({
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent className="sm:max-w-xs">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-rose-600">
+            <DialogTitle className="flex items-center gap-2 text-indigo-600">
               <AlertTriangle className="h-5 w-5" /> Konfirmasi
             </DialogTitle>
           </DialogHeader>
           <div className="py-2 text-sm text-gray-700">
-            Yakin ingin membatalkan pembayaran ini?
+            {pendingStatus ? 'Yakin ingin mencatat pembayaran ini?' : 'Yakin ingin membatalkan/menghapus pembayaran ini?'}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" size="sm" onClick={() => setShowConfirm(false)}>Batal</Button>
-            <Button variant="destructive" size="sm" onClick={confirmDelete}>Ya, Hapus</Button>
+            <Button variant={pendingStatus ? "default" : "destructive"} size="sm" onClick={confirmAction}>
+              {pendingStatus ? 'Ya, Catat' : 'Ya, Hapus'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -20,7 +20,8 @@ export async function getDashboardData(year: number) {
     aggDanasosOut,
     aggArisanIn,
     arisanWinnersYear,
-    lastWinner
+    lastWinner,
+    categories
   ] = await Promise.all([
     prisma.member.findMany({ where: { is_active: true }, orderBy: { nickname: 'asc' } }),
     prisma.transaction.findMany({ where: { period_year: year } }),
@@ -48,7 +49,8 @@ export async function getDashboardData(year: number) {
         { period_year: 'desc' },
         { period_month: 'desc' }
       ]
-    })
+    }),
+    prisma.paymentCategory.findMany()
   ])
 
   const currentCycle = lastWinner ? lastWinner.arisan_cycle : 1
@@ -69,13 +71,18 @@ export async function getDashboardData(year: number) {
   const totalArisanDeficit = Math.max(0, totalArisanExpected - totalArisanPaid)
 
   // Hitung Saldo Aktual (All-time)
+  const kasCategory = categories.find((c: any) => c.id === 1)
+  const danasosCategory = categories.find((c: any) => c.id === 2)
+  const initialKas = Number(kasCategory?.initial_balance || 0)
+  const initialDanasos = Number(danasosCategory?.initial_balance || 0)
+
   const totalKasIn = Number(aggKasIn._sum.amount || 0)
   const totalKasOut = Number(aggKasOut._sum.amount || 0)
-  const saldoKasAktual = totalKasIn - totalKasOut - totalArisanDeficit
+  const saldoKasAktual = initialKas + totalKasIn - totalKasOut - totalArisanDeficit
 
   const totalDanasosIn = Number(aggDanasosIn._sum.amount || 0)
   const totalDanasosOut = Number(aggDanasosOut._sum.amount || 0)
-  const saldoDanasosAktual = totalDanasosIn - totalDanasosOut
+  const saldoDanasosAktual = initialDanasos + totalDanasosIn - totalDanasosOut
 
   // Diffing/Mapping Data Transaksi Tahun Berjalan
   // Memetakan transaksi agar dapat diakses dengan cepat O(1) di UI.
@@ -117,6 +124,8 @@ export async function getDashboardData(year: number) {
     financials: {
       saldoKasAktual,
       saldoDanasosAktual,
+      initialKas,
+      initialDanasos,
       totalArisanDeficit,
       allTime: {
         kasIn: totalKasIn,
