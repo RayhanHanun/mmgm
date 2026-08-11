@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  PJ_KAS
+  PJ_DANASOS
+  PJ_ARISAN
+}
+
+model SystemAccount {
+  id             String         @id @default(uuid()) // Linked to Supabase Auth UUID
+  username       String         @unique
+  role           Role
+  transactions   Transaction[]
+  expenses       Expense[]
+  arisan_winners ArisanWinner[]
+}
+
+model Member {
+  id               String         @id @default(uuid())
+  nickname         String         @unique
+  join_date        DateTime
+  is_active        Boolean        @default(true)
+  is_arisan_active Boolean        @default(true)
+  transactions     Transaction[]
+  arisan_winners   ArisanWinner[]
+}
+
+model PaymentCategory {
+  id              Int           @id // 1=KAS, 2=DANASOS, 3=ARISAN
+  code            String        @unique // KAS, DANASOS, ARISAN
+  fixed_amount    Decimal
+  managed_by_role Role
+  transactions    Transaction[]
+  expenses        Expense[]
+}
+
+model Transaction {
+  id           String          @id @default(uuid())
+  member_id    String
+  category_id  Int
+  period_month Int             // 1-12
+  period_year  Int
+  amount       Decimal
+  recorded_by  String
+  created_at   DateTime        @default(now())
+
+  member       Member          @relation(fields: [member_id], references: [id])
+  category     PaymentCategory @relation(fields: [category_id], references: [id])
+  account      SystemAccount   @relation(fields: [recorded_by], references: [id])
+
+  // CRITICAL: Mencegah duplikasi pembayaran untuk bulan yang sama
+  @@unique([member_id, category_id, period_month, period_year])
+}
+
+model Expense {
+  id           String          @id @default(uuid())
+  category_id  Int             // Hanya boleh KAS atau DANASOS
+  amount       Decimal
+  description  String
+  expense_date DateTime
+  recorded_by  String
+  created_at   DateTime        @default(now())
+
+  category     PaymentCategory @relation(fields: [category_id], references: [id])
+  account      SystemAccount   @relation(fields: [recorded_by], references: [id])
+}
+
+model ArisanWinner {
+  id           String        @id @default(uuid())
+  member_id    String
+  period_month Int
+  period_year  Int
+  arisan_cycle Int           @default(1)
+  won_at       DateTime      @default(now())
+  recorded_by  String
+
+  member       Member        @relation(fields: [member_id], references: [id])
+  account      SystemAccount @relation(fields: [recorded_by], references: [id])
+
+  @@unique([period_month, period_year])
+}
