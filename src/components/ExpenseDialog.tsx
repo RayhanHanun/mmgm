@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { addExpense, editExpense } from '@/actions/expenses'
 import { Plus, Pencil } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface Props {
   categoryId: 1 | 2
@@ -57,12 +58,13 @@ export function ExpenseDialog({ categoryId, categoryName, expenseToEdit }: Props
 
     if (res.success) {
       setOpen(false)
+      toast.success(expenseToEdit ? 'Pengeluaran diperbarui.' : 'Pengeluaran dicatat.')
       if (!expenseToEdit) {
         setAmount('')
         setDescription('')
       }
     } else {
-      alert(res.error)
+      toast.error(res.error)
     }
   }
 

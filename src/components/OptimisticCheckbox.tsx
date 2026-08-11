@@ -1,9 +1,12 @@
 'use client'
 
-import { useOptimistic, useTransition } from 'react'
-import { Check } from 'lucide-react'
+import { useOptimistic, useTransition, useState } from 'react'
+import { Check, AlertTriangle } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toggleTransaction } from '@/actions/transactions'
+import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 interface Props {
   memberId: string
@@ -29,19 +32,37 @@ export function OptimisticCheckbox({
     (_state, newStatus: boolean) => newStatus
   )
   const [isPending, startTransition] = useTransition()
+  const [showConfirm, setShowConfirm] = useState(false)
 
-  const handleToggle = () => {
-    if (isDisabled || isPending) return
-
-    const newStatus = !optimisticStatus
+  const executeToggle = (newStatus: boolean) => {
     startTransition(async () => {
       addOptimisticStatus(newStatus)
       
       const res = await toggleTransaction({ memberId, categoryId, month, year })
       if (!res.success) {
-        alert(res.error)
+        toast.error(res.error)
+      } else {
+        toast.success(newStatus ? 'Berhasil dicatat.' : 'Berhasil dihapus.')
       }
     })
+  }
+
+  const handleToggle = () => {
+    if (isDisabled || isPending) return
+
+    const newStatus = !optimisticStatus
+    
+    if (!newStatus) {
+      setShowConfirm(true)
+      return
+    }
+
+    executeToggle(newStatus)
+  }
+
+  const confirmDelete = () => {
+    setShowConfirm(false)
+    executeToggle(false)
   }
 
   // Render for Disabled (Public view)
@@ -65,13 +86,32 @@ export function OptimisticCheckbox({
 
   // Render for Admin view
   return (
-    <div className="flex h-full w-full items-center justify-center">
-      <Checkbox
-        checked={optimisticStatus}
-        onCheckedChange={handleToggle}
-        disabled={isPending}
-        className={`h-5 w-5 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 ${!optimisticStatus && isPastDue ? 'border-rose-400 bg-rose-50' : ''}`}
-      />
-    </div>
+    <>
+      <div className="flex h-full w-full items-center justify-center">
+        <Checkbox
+          checked={optimisticStatus}
+          onCheckedChange={handleToggle}
+          disabled={isPending}
+          className={`h-5 w-5 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 ${!optimisticStatus && isPastDue ? 'border-rose-400 bg-rose-50' : ''}`}
+        />
+      </div>
+
+      <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <AlertTriangle className="h-5 w-5" /> Konfirmasi
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-sm text-gray-700">
+            Yakin ingin membatalkan pembayaran ini?
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setShowConfirm(false)}>Batal</Button>
+            <Button variant="destructive" size="sm" onClick={confirmDelete}>Ya, Hapus</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

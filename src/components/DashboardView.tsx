@@ -12,6 +12,9 @@ import { ArisanSpinDialog } from './ArisanSpinDialog'
 import { MemberDialog } from './MemberDialog'
 import { DeleteMemberDialog } from './DeleteMemberDialog'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 const CATEGORIES = {
@@ -37,6 +40,7 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [confirmState, setConfirmState] = useState<{ open: boolean, title: string, message: string, onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => {} })
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -136,15 +140,25 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
                             </span>
                           </span>
                           {categoryId === 3 && isCategoryAdmin && (
-                            <button
-                              onClick={async () => {
-                                const newStatus = !row.member.is_arisan_active
-                                if (confirm(`Yakin ingin ${newStatus ? 'mengaktifkan' : 'menonaktifkan'} arisan untuk ${row.member.nickname}?`)) {
-                                  const res = await toggleArisanParticipation(row.member.id, newStatus)
-                                  if (!res.success) alert(res.error)
-                                }
-                              }}
-                              className="text-gray-400 hover:text-indigo-600 p-1 rounded-md hover:bg-indigo-50 ml-2"
+                              <button
+                                onClick={() => {
+                                  const newStatus = !row.member.is_arisan_active
+                                  setConfirmState({
+                                    open: true,
+                                    title: 'Konfirmasi Status Arisan',
+                                    message: `Yakin ingin ${newStatus ? 'mengaktifkan' : 'menonaktifkan'} arisan untuk ${row.member.nickname}?`,
+                                    onConfirm: async () => {
+                                      const res = await toggleArisanParticipation(row.member.id, newStatus)
+                                      if (!res.success) {
+                                        toast.error(res.error)
+                                      } else {
+                                        toast.success(`Arisan ${row.member.nickname} berhasil ${newStatus ? 'diaktifkan' : 'dinonaktifkan'}.`)
+                                      }
+                                      setConfirmState(prev => ({ ...prev, open: false }))
+                                    }
+                                  })
+                                }}
+                                className="text-gray-400 hover:text-indigo-600 p-1 rounded-md hover:bg-indigo-50 ml-2"
                               title={row.member.is_arisan_active ? 'Nonaktifkan Arisan' : 'Aktifkan Arisan'}
                             >
                               {row.member.is_arisan_active ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
@@ -233,14 +247,24 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
                                 expense_date: exp.expense_date
                               }}
                             />
-                            <button
-                              onClick={async () => {
-                                if (confirm('Yakin ingin menghapus pengeluaran ini?')) {
-                                  const res = await deleteExpense(exp.id)
-                                  if (!res.success) alert(res.error)
-                                }
-                              }}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                              <button
+                                onClick={() => {
+                                  setConfirmState({
+                                    open: true,
+                                    title: 'Hapus Pengeluaran',
+                                    message: 'Yakin ingin menghapus pengeluaran ini?',
+                                    onConfirm: async () => {
+                                      const res = await deleteExpense(exp.id)
+                                      if (!res.success) {
+                                        toast.error(res.error)
+                                      } else {
+                                        toast.success('Pengeluaran berhasil dihapus.')
+                                      }
+                                      setConfirmState(prev => ({ ...prev, open: false }))
+                                    }
+                                  })
+                                }}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -291,19 +315,28 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
                       <span suppressHydrationWarning className="text-[10px] text-gray-400">
                         Diacak pada {new Date(winner.won_at).toLocaleDateString('id-ID')}
                       </span>
-                      {isCategoryAdmin && (
-                        <button
-                          onClick={async () => {
-                            if (confirm('Yakin ingin membatalkan kemenangan ini?')) {
-                              const res = await deleteArisanWinner(winner.id)
-                              if (!res.success) alert(res.error)
-                            }
-                          }}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      {isCategoryAdmin && <button
+                            onClick={() => {
+                              setConfirmState({
+                                open: true,
+                                title: 'Batalkan Kemenangan',
+                                message: 'Yakin ingin membatalkan kemenangan arisan ini?',
+                                onConfirm: async () => {
+                                  const res = await deleteArisanWinner(winner.id)
+                                  if (!res.success) {
+                                    toast.error(res.error)
+                                  } else {
+                                    toast.success('Kemenangan berhasil dibatalkan.')
+                                  }
+                                  setConfirmState(prev => ({ ...prev, open: false }))
+                                }
+                              })
+                            }}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
-                      )}
+                      }
                     </div>
                   </div>
                 ))
@@ -523,10 +556,27 @@ export function DashboardView({ data, isAdmin, userRole, currentYear, headerTitl
         </div>
       </header>
 
-      {/* Content */}
+      {/* Tab Content Area */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
         {renderContent()}
       </div>
+
+      <Dialog open={confirmState.open} onOpenChange={(open) => setConfirmState(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <AlertTriangle className="h-5 w-5" /> {confirmState.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-sm text-gray-700">
+            {confirmState.message}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setConfirmState(prev => ({ ...prev, open: false }))}>Batal</Button>
+            <Button variant="destructive" size="sm" onClick={confirmState.onConfirm}>Ya, Lanjutkan</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile Bottom Nav — fixed, visible only on mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgb(0,0,0,0.06)]">
