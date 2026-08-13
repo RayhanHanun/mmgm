@@ -13,7 +13,8 @@ export const metadata: Metadata = {
   description: "Buku Kas Digital Karang Taruna MMGM",
 };
 
-import { Toaster } from "sonner";
+import dynamic from "next/dynamic";
+const Toaster = dynamic(() => import("sonner").then((mod) => mod.Toaster), { ssr: false });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
