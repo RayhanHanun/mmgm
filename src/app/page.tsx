@@ -11,7 +11,7 @@ export default async function PublicDashboard({ searchParams }: { searchParams: 
   const data = await getDashboardData(currentYear)
 
   return (
-    <main className="min-h-screen bg-[#f4f6f8]">
+    <div className="flex-1 bg-[#f4f6f8]">
       <DashboardView 
         data={data} 
         isAdmin={false} 
@@ -27,6 +27,6 @@ export default async function PublicDashboard({ searchParams }: { searchParams: 
           </Link>
         }
       />
-    </main>
+    </div>
   )
 }

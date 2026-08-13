@@ -33,7 +33,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const data = await getDashboardData(currentYear)
 
   return (
-    <main className="min-h-screen bg-[#f4f6f8]">
+    <div className="flex-1 bg-[#f4f6f8]">
       <DashboardView 
         data={data} 
         isAdmin={true} 
@@ -57,6 +57,6 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
           </form>
         }
       />
-    </main>
+    </div>
   )
 }

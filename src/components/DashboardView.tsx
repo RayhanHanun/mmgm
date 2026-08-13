@@ -2,16 +2,18 @@
 
 import { useState, useCallback } from 'react'
 import { OptimisticCheckbox } from './OptimisticCheckbox'
-import { ExpenseDialog } from './ExpenseDialog'
 import { Wallet, AlertTriangle, HeartHandshake, TrendingDown, LayoutDashboard, Landmark, Users, Dice5, Receipt, Trash2, Eye, EyeOff } from 'lucide-react'
 import Image from 'next/image'
 import { deleteExpense } from '@/actions/expenses'
 import { deleteArisanWinner } from '@/actions/arisan'
 import { toggleArisanParticipation } from '@/actions/members'
 import { updateInitialBalance } from '@/actions/transactions'
-import { ArisanSpinDialog } from './ArisanSpinDialog'
-import { MemberDialog } from './MemberDialog'
-import { DeleteMemberDialog } from './DeleteMemberDialog'
+import dynamic from 'next/dynamic'
+
+const ExpenseDialog = dynamic(() => import('./ExpenseDialog').then((mod) => mod.ExpenseDialog))
+const ArisanSpinDialog = dynamic(() => import('./ArisanSpinDialog').then((mod) => mod.ArisanSpinDialog))
+const MemberDialog = dynamic(() => import('./MemberDialog').then((mod) => mod.MemberDialog))
+const DeleteMemberDialog = dynamic(() => import('./DeleteMemberDialog').then((mod) => mod.DeleteMemberDialog))
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
