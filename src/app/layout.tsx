@@ -13,8 +13,7 @@ export const metadata: Metadata = {
   description: "Buku Kas Digital Karang Taruna MMGM",
 };
 
-import dynamic from "next/dynamic";
-const Toaster = dynamic(() => import("sonner").then((mod) => mod.Toaster), { ssr: false });
+import { DynamicToaster } from "@/components/DynamicToaster";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1 flex flex-col">
           {children}
         </main>
-        <Toaster theme="dark" position="bottom-center" duration={2000} swipeDirections={['right']} />
+        <DynamicToaster />
       </body>
     </html>
   );
